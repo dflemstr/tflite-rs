@@ -1,6 +1,7 @@
 use std::mem;
+use std::ffi;
 
-use crate::bindings::tflite as bindings;
+use crate::bindings;
 use crate::interpreter::op_resolver::OpResolver;
 
 cpp! {{
@@ -10,7 +11,22 @@ cpp! {{
 }}
 
 pub struct Resolver {
-    handle: Box<bindings::OpResolver>,
+    handle: Box<bindings::tflite::OpResolver>,
+}
+
+impl Resolver {
+    pub fn add_custom(&mut self, name: &str, registration: &'static bindings::TfLiteRegistration) {
+        use std::ops::DerefMut;
+
+        let handle = self.handle.deref_mut();
+        let name = ffi::CString::new(name).unwrap();
+        let name = name.as_ptr();
+        unsafe {
+            cpp!([handle as "BuiltinOpResolver*", name as "char*", registration as "TfLiteRegistration*"] {
+                handle->AddCustom(name, registration);
+            });
+        }
+    }
 }
 
 impl Drop for Resolver {
@@ -26,7 +42,7 @@ impl Drop for Resolver {
 }
 
 impl OpResolver for Resolver {
-    fn get_resolver_handle(&self) -> &bindings::OpResolver {
+    fn get_resolver_handle(&self) -> &bindings::tflite::OpResolver {
         self.handle.as_ref()
     }
 }
@@ -35,7 +51,7 @@ impl Default for Resolver {
     #[allow(clippy::forget_copy, deprecated)]
     fn default() -> Self {
         let handle = unsafe {
-            cpp!([] -> *mut bindings::OpResolver as "OpResolver*" {
+            cpp!([] -> *mut bindings::tflite::OpResolver as "OpResolver*" {
                 return new BuiltinOpResolver();
             })
         };
