@@ -24,6 +24,15 @@ cpp! {{
 
 pub type TensorIndex = c_int;
 
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[repr(u32)]
+pub enum ExternalContextType {
+    EigenContext = bindings::TfLiteExternalContextType::kTfLiteEigenContext as _,
+    GemmLowpContext = bindings::TfLiteExternalContextType::kTfLiteGemmLowpContext as _,
+    EdgeTpuContext = bindings::TfLiteExternalContextType::kTfLiteEdgeTpuContext as _,
+    CpuBackendContext = bindings::TfLiteExternalContextType::kTfLiteCpuBackendContext as _,
+}
+
 pub struct Interpreter<'a, Op>
 where
     Op: OpResolver,
@@ -119,6 +128,16 @@ where
         } else {
             Err(Error::internal_error("failed to invoke interpreter"))
         }
+    }
+
+    pub fn set_external_context(&mut self, typ: ExternalContextType, context: *mut bindings::TfLiteExternalContext) {
+        let interpreter = self.handle_mut();
+
+        unsafe {
+            cpp!([interpreter as "Interpreter*", typ as "TfLiteExternalContextType", context as "TfLiteExternalContext*"] {
+                  interpreter->SetExternalContext(typ, context);
+            })
+        };
     }
 
     /// Sets the number of threads available to the interpreter
