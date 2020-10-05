@@ -1,5 +1,5 @@
-use std::mem;
 use std::ffi;
+use std::mem;
 
 use crate::bindings;
 use crate::interpreter::op_resolver::OpResolver;
@@ -15,11 +15,14 @@ pub struct Resolver {
 }
 
 impl Resolver {
-    pub fn add_custom(&mut self, name: &str, registration: &'static bindings::TfLiteRegistration) {
+    pub fn add_custom(
+        &mut self,
+        name: &ffi::CStr,
+        registration: &'static bindings::TfLiteRegistration,
+    ) {
         use std::ops::DerefMut;
 
         let handle = self.handle.deref_mut();
-        let name = ffi::CString::new(name).unwrap();
         let name = name.as_ptr();
         unsafe {
             cpp!([handle as "BuiltinOpResolver*", name as "char*", registration as "TfLiteRegistration*"] {

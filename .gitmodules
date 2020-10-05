@@ -4,3 +4,6 @@
 [submodule "submodules/downloads"]
 	path = submodules/downloads
 	url = https://github.com/boncheolgu/tflite-rs-downloads
+[submodule "submodules/edgetpu"]
+	path = submodules/edgetpu
+	url = https://github.com/google-coral/edgetpu.git

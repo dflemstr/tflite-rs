@@ -3,7 +3,9 @@
 #[macro_use]
 extern crate cpp;
 
-mod bindings;
+pub mod bindings;
+#[cfg(feature = "edgetpu")]
+pub mod edgetpu;
 mod error;
 mod interpreter;
 pub mod model;

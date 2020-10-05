@@ -1,11 +1,13 @@
 mod builder;
 pub mod context;
+pub mod external_context;
 mod fbmodel;
 pub mod op_resolver;
 pub mod ops;
 
 use std::mem;
 use std::slice;
+use std::sync;
 
 use libc::{c_int, size_t};
 
@@ -38,6 +40,7 @@ where
     Op: OpResolver,
 {
     handle: Box<bindings::tflite::Interpreter>,
+    contexts: Vec<sync::Arc<dyn external_context::ExternalContext>>,
     _builder: InterpreterBuilder<'a, Op>,
 }
 
@@ -73,7 +76,8 @@ where
         builder: InterpreterBuilder<'a, Op>,
     ) -> Result<Self> {
         let handle = unsafe { Box::from_raw(handle) };
-        let mut interpreter = Self { handle, _builder: builder };
+        let contexts = Vec::new();
+        let mut interpreter = Self { handle, contexts, _builder: builder };
         // # Safety
         // Always allocate tensors so we don't get into a state
         // where we try to read from or write to unallocated memory
@@ -130,14 +134,19 @@ where
         }
     }
 
-    pub fn set_external_context(&mut self, typ: ExternalContextType, context: *mut bindings::TfLiteExternalContext) {
+    pub fn set_external_context(
+        &mut self,
+        typ: ExternalContextType,
+        context: sync::Arc<dyn external_context::ExternalContext>,
+    ) {
         let interpreter = self.handle_mut();
-
+        let handle = context.get_external_context_handle();
         unsafe {
-            cpp!([interpreter as "Interpreter*", typ as "TfLiteExternalContextType", context as "TfLiteExternalContext*"] {
-                  interpreter->SetExternalContext(typ, context);
+            cpp!([interpreter as "Interpreter*", typ as "TfLiteExternalContextType", handle as "TfLiteExternalContext*"] {
+                  interpreter->SetExternalContext(typ, handle);
             })
         };
+        self.contexts.push(context);
     }
 
     /// Sets the number of threads available to the interpreter

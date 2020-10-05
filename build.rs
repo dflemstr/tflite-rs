@@ -181,13 +181,25 @@ fn prepare_tensorflow_library() {
     println!("cargo:rustc-link-lib=dylib=dl");
 }
 
+#[cfg(feature = "edgetpu")]
+fn prepare_edgetpu_library() {
+    // TODO: check if lib is in the search path, and if not tell users to follow instructions at
+    // https://coral.ai/docs/accelerator/get-started/
+    println!("cargo:rustc-link-lib=edgetpu");
+    let arch = env::var("CARGO_CFG_TARGET_ARCH").expect("Unable to get TARGET_ARCH");
+    if &arch == "arm" {
+        println!("cargo:rustc-link-lib=atomic");
+    }
+}
+
 // This generates "tflite_types.rs" containing structs and enums which are inter-operable with Glow.
 fn import_tflite_types() {
     use bindgen::*;
 
     let submodules = submodules();
     let submodules_str = submodules.to_string_lossy();
-    let bindings = Builder::default()
+    #[allow(unused_mut)]
+    let mut bindings = Builder::default()
         .whitelist_recursively(true)
         .prepend_enum_name(false)
         .impl_debug(true)
@@ -230,6 +242,17 @@ fn import_tflite_types() {
         // required to get cross compilation for aarch64 to work because of an issue in flatbuffers
         .clang_arg("-fms-extensions");
 
+    #[cfg(feature = "edgetpu")]
+    {
+        bindings = bindings
+            .header("csrc/edgetpu_wrapper.hpp")
+            .whitelist_type("edgetpu::EdgeTpuContext")
+            .opaque_type("edgetpu::EdgeTpuContext")
+            .whitelist_type("edgetpu::EdgeTpuManager")
+            .opaque_type("edgetpu::EdgeTpuManager")
+            .opaque_type("std::_.+")
+            .clang_arg(format!("-I{}/edgetpu/libedgetpu", submodules_str));
+    }
     let bindings = bindings.generate().expect("Unable to generate bindings");
 
     // Write the bindings to the $OUT_DIR/tflite_types.rs file.
@@ -243,6 +266,7 @@ fn build_inline_cpp() {
     cpp_build::Config::new()
         .include(submodules.join("tensorflow"))
         .include(submodules.join("downloads/flatbuffers/include"))
+        .include(submodules.join("edgetpu/libedgetpu"))
         .flag("-fPIC")
         .flag("-std=c++14")
         .flag("-Wno-sign-compare")
@@ -512,4 +536,6 @@ fn main() {
     import_tflite_types();
     build_inline_cpp();
     prepare_tensorflow_library();
+    #[cfg(feature = "edgetpu")]
+    prepare_edgetpu_library();
 }
