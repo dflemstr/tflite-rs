@@ -61,7 +61,8 @@ impl ExternalContext for Context {
             let raw = cpp!([handle as "void*"] -> *const bindings::TfLiteExternalContext as "TfLiteExternalContext*"{
                 return static_cast<std::shared_ptr<EdgeTpuContext>*>(handle)->get();
             });
-            raw.as_ref().unwrap()
+            // TODO: consider returning Result instead
+            raw.as_ref().expect("could not get edgetpu context, do you have the right USB permissions?")
         }
     }
 }
