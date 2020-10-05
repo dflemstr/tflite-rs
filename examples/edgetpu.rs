@@ -6,7 +6,7 @@ use tflite::{FlatBufferModel, InterpreterBuilder, Result};
 
 pub fn main() -> Result<()> {
     assert_eq!(args().len(), 2, "edgetpu <tflite model>");
-    tflite::edgetpu::Context::print_debug_info();
+    tflite::edgetpu::Context::enable_debug_printing(10);
     let context = sync::Arc::new(tflite::edgetpu::Context::new()?);
 
     let filename = args().nth(1).unwrap();

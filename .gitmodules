@@ -1,9 +1,9 @@
 [submodule "submodules/tensorflow"]
 	path = submodules/tensorflow
-	url = https://github.com/tensorflow/tensorflow.git
+	url = https://github.com/dflemstr/tensorflow.git
 [submodule "submodules/downloads"]
 	path = submodules/downloads
-	url = https://github.com/boncheolgu/tflite-rs-downloads
+	url = https://github.com/dflemstr/tflite-rs-downloads.git
 [submodule "submodules/edgetpu"]
 	path = submodules/edgetpu
 	url = https://github.com/google-coral/edgetpu.git

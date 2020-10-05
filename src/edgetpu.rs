@@ -45,15 +45,10 @@ impl Context {
         Ok(Context { handle })
     }
 
-    pub fn print_debug_info() {
+    pub fn enable_debug_printing(verbosity: raw::c_int) {
         unsafe {
-            cpp!([] {
-                EdgeTpuManager::GetSingleton()->SetVerbosity(10);
-                const auto& available_tpus = EdgeTpuManager::GetSingleton()->EnumerateEdgeTpu();
-                std::cout << "num tpus: " << available_tpus.size() << std::endl;
-                for (const auto& tpu : available_tpus) {
-                    std::cout << tpu.type << " " << tpu.path << std::endl;
-                }
+            cpp!([verbosity as "int"] {
+                EdgeTpuManager::GetSingleton()->SetVerbosity(verbosity);
             });
         }
     }
